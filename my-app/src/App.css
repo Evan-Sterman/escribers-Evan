@@ -1,0 +1,71 @@
+/* App.css */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import '../node_modules/@syncfusion/ej2-base/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-buttons/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-inputs/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-popups/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-lists/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-navigations/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-splitbuttons/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-dropdowns/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-documenteditor/styles/material.css';
+
+/* CSS Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body, #root, .container-grid, main, #documentEditor {
+    height: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* Grid layout for the container to stretch the main content */
+.container-grid {
+    display: grid;
+    grid-template-rows: 1fr; /* Single row taking full height */
+    height: 100% !important;
+}
+
+/* Main content area should fill the available space */
+main {
+    display: block;
+    height: 100% !important;
+    padding: 0;
+    margin: 0;
+}
+
+/* Ensure the DocumentEditorContainerComponent uses full height and width */
+#documentEditor {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+}
+
+.modal-flex-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.modal-version-list {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+    border-right: 1px solid #ccc;
+}
+
+.modal-document-preview {
+    flex: 2;
+    padding: 10px;
+    overflow: auto;
+    position: relative;
+}

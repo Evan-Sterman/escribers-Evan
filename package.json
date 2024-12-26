@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@syncfusion/ej2-react-layouts": "^28.1.33",
+    "@syncfusion/ej2-react-navigations": "^28.1.36",
+    "@syncfusion/ej2-react-popups": "^28.1.33",
+    "antd": "^5.22.5",
+    "moment": "^2.30.1"
+  }
+}
