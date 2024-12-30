@@ -4,7 +4,6 @@ import { DocumentEditorContainerComponent, Toolbar } from '@syncfusion/ej2-react
 import { registerLicense } from '@syncfusion/ej2-base';
 import axios from 'axios';
 import '@syncfusion/ej2-react-documenteditor/styles/material.css';
-
 import { Modal } from 'antd';
 import FileVersionViewer from './FileVersionViewer';
 import './App.css';
@@ -20,7 +19,21 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
     const [isModalVisible, setIsModalVisible] = useState(false); // Controls modal visibility
     const [error, setError] = useState(null); // Error state for error handling
     const [previewContent, setPreviewContent] = useState(null); // Holds content for document preview
+    const [zoomImage, setZoomImage] = useState(null); // For storing the generated image
+    const [isZoomModalVisible, setIsZoomModalVisible] = useState(false); // State for zoom modal
+    const [isEditorInitialized, setIsEditorInitialized] = useState(false); // Editor initialization status
     const previewRef = useRef(null); // Ref for the preview DocumentEditor
+
+    // Utility Functions
+    // Reads the content of a file as text
+    const readFileAsText = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result); // Resolve with file content
+            reader.onerror = () => reject(reader.error); // Reject on error
+            reader.readAsText(file); // Read file as text
+        });
+    };
 
     // Save the current document to the client in .sfdt format
     const saveDocument = (fileName = 'Document') => {
@@ -70,10 +83,7 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
 
             // Get a presigned URL for uploading the file
             const response = await axios.get('http://localhost:3002/generate-presigned-url', {
-                params: {
-                    fileName,
-                    fileType
-                }
+                params: { fileName, fileType }
             });
 
             const url = response.data.url; // Extract the presigned URL
@@ -124,16 +134,6 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
         });
     };
 
-    // Reads the content of a file as text
-    const readFileAsText = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result); // Resolve with file content
-            reader.onerror = () => reject(reader.error); // Reject on error
-            reader.readAsText(file); // Read file as text
-        });
-    };
-
     // Handles opening a file in the Document Editor
     const handleOpenFile = (fileContent) => {
         try {
@@ -146,21 +146,7 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
         }
     };
 
-    // Callback for selecting a version in the modal
-    const onVersionSelected = (versionContent) => {
-        if (ref?.current) {
-            try {
-                const container = ref.current;
-                container.documentEditor.open(versionContent); // Open the selected version
-                container.restrictEditing = true; // Set the editor to read-only
-                console.log("Version loaded successfully.");
-            } catch (error) {
-                setError("Failed to load the selected version.");
-                console.error("Error loading version:", error);
-            }
-        }
-    };
-
+    // Modal-related Functions
     // Confirms the selected version in the modal and loads it into the main editor
     const confirmVersion = () => {
         if (previewContent && ref?.current) {
@@ -194,6 +180,77 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
         }
     }, [previewContent]);
 
+    // Zoom-related Functions
+    const handleZoomClick = async () => {
+        if (!isEditorInitialized) {
+            console.warn("DocumentEditor is not initialized.");
+            return;
+        }
+
+        if (previewRef.current?.documentEditor) {
+            let canvas = document.createElement('canvas');
+            let context = canvas.getContext('2d');
+            let totalHeight = 0;
+
+            const pageCount = previewRef.current.documentEditor.pageCount;
+            previewRef.current.documentEditor.documentEditorSettings.printDevicePixelRatio = 2;
+
+            for (let i = 1; i <= pageCount; i++) {
+                try {
+                    const dataUrl = await exportPageAsImage(previewRef.current, i);
+                    const image = await loadImage(dataUrl);
+
+                    const imageHeight = image.height;
+
+                    if (i === 1) {
+                        canvas.width = image.width;
+                    }
+
+                    canvas.height += imageHeight;
+                    totalHeight += imageHeight;
+
+                    context.drawImage(image, 0, totalHeight - imageHeight);
+                } catch (error) {
+                    console.error(`Failed to export or load image for page ${i}:`, error);
+                }
+            }
+
+            const finalDataUrl = canvas.toDataURL('image/png');
+            setZoomImage(finalDataUrl);
+            setIsZoomModalVisible(true);
+        } else {
+            console.warn("DocumentEditor is not initialized.");
+        }
+    };
+
+    const exportPageAsImage = (previewContainer, pageIndex) => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                try {
+                    const image = previewContainer.documentEditor.exportAsImage(pageIndex, 'image/png');
+                    resolve(image.src);
+                } catch (error) {
+                    reject(error);
+                }
+            }, 500 * pageIndex);
+        });
+    };
+
+    const loadImage = (src) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    };
+
+    // Ensure editor is initialized
+    const onEditorInitialized = () => {
+        setIsEditorInitialized(true);
+        console.log("DocumentEditor is initialized.");
+    };
+
     // Define toolbar items with custom actions
     const toolbarItems = useMemo(() => [
         'New',
@@ -217,7 +274,6 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
         'Undo', 'Redo', 'Image', 'Table', 'Hyperlink', 'Bookmark',
         'TableOfContents', 'Header', 'Footer', 'PageSetup', 'PageNumber', 'Break',
         'Find', 'LocalClipboard', 'RestrictEditing', 'FormFields',
-
         {
             prefixIcon: 'e-icons e-save', // Icon for save
             tooltipText: 'Save',
@@ -272,6 +328,7 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
                     serviceUrl="https://ej2services.syncfusion.com/production/web-services/api/documenteditor/"
                     style={{ height: '100%', width: '100%' }}
                     ref={ref}
+                    created={onEditorInitialized} // Set editor initialization status
                 />
             </main>
 
@@ -287,7 +344,7 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
                     style={{
                         display: 'flex',
                         flexDirection: 'row',
-                        height: 'px',
+                        height: '500px',
                         gap: '20px',
                     }}
                 >
@@ -305,7 +362,7 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
 
                     {/* Right Panel: Document Preview */}
                     {previewContent && (
-                        <div style={{ flex: 2,  flexDirection: 'column', padding: '10px', overflowY: 'hidden' }}>
+                        <div style={{ flex: 2, flexDirection: 'column', padding: '10px', overflowY: 'hidden' }}>
                             <h3>Document Preview</h3>
                             <DocumentEditorContainerComponent
                                 id="documentPreview"
@@ -313,6 +370,8 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
                                 showPropertiesPane={false}
                                 serviceUrl="https://ej2services.syncfusion.com/production/web-services/api/documenteditor/"
                                 style={{ flex: 1, height: '100%', width: '100%' }}
+                                onClick={handleZoomClick} // Trigger zoom on click
+                                created={onEditorInitialized} // Set editor initialization status
                                 ref={previewRef}
                             />
                             {/* Confirm Button */}
@@ -334,8 +393,25 @@ const DocumentEditor = forwardRef(({ documentContent }, ref) => {
                     )}
                 </div>
             </Modal>
+
+            {/* Zoom Modal */}
+            <Modal
+                open={isZoomModalVisible}
+                onCancel={() => setIsZoomModalVisible(false)} // Close the modal
+                footer={null} // No footer for simplicity
+                width={1000}
+            >
+                {zoomImage && (
+                    <img
+                        src={zoomImage} // Use the generated image data URL
+                        alt="Zoom Preview"
+                        style={{ width: '100%', height: 'auto' }} // Scale image to fit modal width
+                    />
+                )}
+            </Modal>
         </div>
     );
 });
 
 export default DocumentEditor;
+
