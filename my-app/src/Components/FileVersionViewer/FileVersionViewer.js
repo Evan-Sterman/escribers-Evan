@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import s3 from './awsConfig'; // Import the AWS S3 configuration
+import s3 from '../../awsConfig'; // Adjust based on where awsConfig.js is // Import the AWS S3 configuration
 import { Table, DatePicker, Space } from 'antd'; // Import UI components from Ant Design
 import moment from 'moment'; // Library for date and time manipulation
 

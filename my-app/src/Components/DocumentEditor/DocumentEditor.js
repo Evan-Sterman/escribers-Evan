@@ -5,7 +5,7 @@ import { registerLicense } from '@syncfusion/ej2-base';
 import axios from 'axios';
 import '@syncfusion/ej2-react-documenteditor/styles/material.css';
 import { Modal } from 'antd';
-import FileVersionViewer from './FileVersionViewer';
+import FileVersionViewer from '../FileVersionViewer/FileVersionViewer';
 import './App.css';
 
 // Register Syncfusion license (required for use of their components)
