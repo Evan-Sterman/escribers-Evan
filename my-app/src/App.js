@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import DocumentEditor from './DocumentEditor'; // Importing the DocumentEditor component
-import './App.css'; // Importing CSS for styling
+import DocumentEditor from './Components/DocumentEditor/DocumentEditor'; // Importing CSS for styling
 
 /**
  * App Component
